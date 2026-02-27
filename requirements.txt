@@ -1,0 +1,28 @@
+﻿# Web framework
+Flask>=2.3,<3.0
+Werkzeug>=2.3,<3.0
+Jinja2>=3.1,<4.0
+
+# HTTP requests
+requests>=2.31,<3.0
+urllib3>=2.0,<3.0
+certifi>=2023.11.17
+charset-normalizer>=3.3
+idna>=3.4
+
+# Production server
+waitress>=2.1
+
+# Windows service support
+pywin32>=306
+
+# Optional visualization
+plotly>=5.18
+pandas>=2.1
+numpy>=1.26
+
+# Built-in (do NOT install)
+# sqlite3
+
+# Environment variables
+python-dotenv>=1.0
