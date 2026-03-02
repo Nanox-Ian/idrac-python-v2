@@ -1,4 +1,4 @@
-# Web framework 
+# Web framework
 Flask>=2.3,<3.0
 Werkzeug>=2.3,<3.0
 Jinja2>=3.1,<4.0
