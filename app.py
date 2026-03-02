@@ -8,7 +8,7 @@ from datetime import datetime
 from flask import Flask, render_template, jsonify, request
 from requests.auth import HTTPBasicAuth
 
-# Disable SSL warnings for iDRAC self-signed certs
+# Disable SSL warnings for iDRAC self-signed certs 
 requests.packages.urllib3.disable_warnings()
 
 app = Flask(__name__)
@@ -179,4 +179,5 @@ if __name__ == '__main__':
     # Use waitress for production
     from waitress import serve
     print("Starting iDRAC Monitor on http://127.0.0.1:5000")
+
     serve(app, host='0.0.0.0', port=5000)
