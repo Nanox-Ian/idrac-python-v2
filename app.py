@@ -569,6 +569,32 @@ def chart_png_from_points(points: List[Tuple[float, Optional[float]]]) -> bytes:
     return bio.getvalue()
 
 # =========================
+# Simple Temperature Log Writer
+# =========================
+TEMP_LOG_FILE = os.path.join("storage", "temperature.log")
+
+def log_temperature(temp: Optional[float], status: str, endpoint: Optional[str]):
+    """
+    Append temperature data to temperature.log
+    Format:
+    2026-03-04 14:22:10 | 26.5°C | WARNING | /redfish/v1/Chassis/1/Thermal
+    """
+    try:
+        os.makedirs("storage", exist_ok=True)
+
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        temp_str = "N/A" if temp is None else f"{temp:.1f}°C"
+        endpoint_str = endpoint or "N/A"
+
+        line = f"{timestamp} | {temp_str} | {status} | {endpoint_str}\n"
+
+        with open(TEMP_LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(line)
+
+    except Exception as e:
+        logger.warning("Temperature log write failed: %s", e)
+
+# =========================
 # Monitor thread (for emails + logging)
 # =========================
 class TempMonitor:
@@ -617,6 +643,9 @@ class TempMonitor:
             self.last_endpoint = endpoint
             self.history.append((ts, temp))
             # CSV log every 5 minutes like PHP
+
+            # Log to temperature.log (every sample)
+            log_temperature(temp, status, endpoint)
             minute = int(datetime.now().strftime("%M"))
             if minute % 5 == 0 and temp is not None:
                 try:
@@ -780,4 +809,5 @@ if __name__ == "__main__":
         serve(app, host="0.0.0.0", port=5000)
     except Exception:
         print("Starting (Flask dev) on http://0.0.0.0:5000 (browse at http://127.0.0.1:5000)")
+
         app.run(host="0.0.0.0", port=5000)
