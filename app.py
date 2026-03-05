@@ -484,6 +484,7 @@ def build_email_body(kind: str, temp: Optional[float], timestamp: str, endpoint:
       <p><b>Endpoint:</b> <code>{endpoint_txt}</code></p>
       <hr/>
       <p style="color: #7F8C8D; font-size: 0.9em;">This message was generated automatically by iDRAC Monitor.</p>
+      <p style="color: #7F8C8D; font-size: 0.9em;"><em>Do not reply to this email; this is an automated monitoring system.</em></p>
     </body></html>
     """
     text = f"""iDRAC Temperature {kind}
@@ -493,31 +494,36 @@ Thresholds: Normal ≤{NORMAL_TEMP_MAX}°C | Warning {WARNING_TEMP}-{CRITICAL_TE
 Time: {timestamp}
 Host: {IDRAC_HOST}
 Endpoint: {endpoint_txt}
+
+Do not reply to this email; this is an automated monitoring system.
 """
     return html, text
 
 # =========================
-# Chart generation (last 1h, 20 points)
+# Chart generation (10‑min steps, last 20 readings)
 # =========================
-def resample_last_hour(points: List[Tuple[float, Optional[float]]], target_pts=20) -> List[Tuple[float, Optional[float]]]:
+def resample_10min_last(points: List[Tuple[float, Optional[float]]], max_points: int = 20) -> List[Tuple[float, Optional[float]]]:
+    """
+    Group all available history points into 10-minute buckets and pick the latest
+    sample per bucket. Return the last `max_points` buckets (chronological order).
+    """
     if not points:
         return []
-    now = time.time()
-    one_hour = now - 3600
-    pts = [(ts, v) for ts, v in points if ts >= one_hour]
-    if not pts:
+    # Keep only the most recent sample in each 10-min bucket
+    buckets: Dict[int, Tuple[float, Optional[float]]] = {}
+    for ts, v in points:
+        key = int(ts // 600)  # 600s = 10 minutes
+        # Keep the latest timestamp in the bucket
+        if (key not in buckets) or (ts > buckets[key][0]):
+            buckets[key] = (ts, v)
+
+    if not buckets:
         return []
-    pts.sort(key=lambda x: x[0])
-    if len(pts) <= target_pts:
-        return pts
-    step = len(pts) / float(target_pts)
-    out = []
-    i = 0.0
-    for _ in range(target_pts):
-        idx = min(int(i), len(pts) - 1)
-        out.append(pts[idx])
-        i += step
-    return out
+
+    # Sort by bucket (descending), take last `max_points`, then restore chrono order
+    keys_desc = sorted(buckets.keys(), reverse=True)[:max_points]
+    selected = [buckets[k] for k in reversed(keys_desc)]
+    return selected
 
 def chart_png_from_points(points: List[Tuple[float, Optional[float]]]) -> bytes:
     xs = [datetime.fromtimestamp(ts) for ts, _ in points]
@@ -550,8 +556,10 @@ def chart_png_from_points(points: List[Tuple[float, Optional[float]]]) -> bytes:
                 x_plot.append(x)
                 y_plot.append(y)
         if x_plot:
-            ax.plot(x_plot, y_plot, color="#3b82f6", linewidth=2)
-        ax.set_xlabel("Last 1 hour", color="#9ca3af")
+            ax.plot(x_plot, y_plot, color="#3b82f6", linewidth=2, marker="o", markersize=3)
+
+        # Updated label for clarity
+        ax.set_xlabel("10‑min steps (last 20 readings)", color="#9ca3af")
         ax.set_ylabel("°C", color="#9ca3af")
         ax.set_ylim(bottom=0)
         fig.tight_layout()
@@ -560,7 +568,7 @@ def chart_png_from_points(points: List[Tuple[float, Optional[float]]]) -> bytes:
         plt.close(fig)
         return bio.getvalue()
 
-    # PIL fallback
+    # PIL fallback (unchanged except label isn't drawn in PIL mode)
     W, H = 600, 160
     bg = (17, 24, 39)
     line = (59, 130, 246)
@@ -608,6 +616,20 @@ def log_temperature(temp: Optional[float], status: str, endpoint: Optional[str])
             f.write(line)
     except Exception as e:
         logger.warning("Temperature log write failed: %s", e)
+
+def _append_past_hour_stats(html: str, text: str, history: deque) -> Tuple[str, str]:
+    """Append past-hour min/avg/max to the email body (HTML and text) at the end."""
+    now = time.time()
+    hour_vals = [v for ts, v in list(history) if ts >= now - 3600 and v is not None]
+    if not hour_vals:
+        return html, text
+    vmin = min(hour_vals); vmax = max(hour_vals)
+    vavg = sum(hour_vals) / len(hour_vals)
+    html_insert = f'<p><b>Past hour:</b> min {vmin:.1f}°C • avg {vavg:.1f}°C • max {vmax:.1f}°C</p>'
+    # Insert before closing tags
+    html = html.replace("</body></html>", html_insert + "</body></html>")
+    text += f"\nPast hour: min {vmin:.1f}°C, avg {vavg:.1f}°C, max {vmax:.1f}°C\n"
+    return html, text
 
 # =========================
 # Monitor thread (for emails + logging)
@@ -696,6 +718,7 @@ class TempMonitor:
                 ep = self.last_endpoint
                 subject = build_email_subject("Hourly Report", temp)
                 html, text = build_email_body("Hourly Report", temp, now.strftime("%Y-%m-%d %H:%M:%S"), ep)
+                html, text = _append_past_hour_stats(html, text, self.history)
                 chart = self._build_chart_attachment()
                 ok = send_email(subject, html, text, attachments=chart)
                 if ok:
@@ -716,6 +739,7 @@ class TempMonitor:
                 if self.alert_state != st:
                     subject = build_email_subject(f"{st} Alert", temp)
                     html, text = build_email_body(f"{st} Alert", temp, now_str, ep)
+                    html, text = _append_past_hour_stats(html, text, self.history)
                     chart = self._build_chart_attachment()
                     if send_email(subject, html, text, attachments=chart):
                         self.alert_state = st
@@ -728,6 +752,7 @@ class TempMonitor:
                 if self.alert_state == st and (now_ts - self.last_alert_time) >= PERSIST_EMAIL_EVERY_SEC:
                     subject = build_email_subject(f"{st} (Persistent)", temp)
                     html, text = build_email_body(f"{st} (Persistent)", temp, now_str, ep)
+                    html, text = _append_past_hour_stats(html, text, self.history)
                     chart = self._build_chart_attachment()
                     if send_email(subject, html, text, attachments=chart):
                         self.last_alert_time = now_ts
@@ -739,9 +764,9 @@ class TempMonitor:
 
     def _build_chart_attachment(self) -> List[Tuple[str, str, bytes]]:
         pts = list(self.history)
-        pts_1h = resample_last_hour(pts, target_pts=20)
-        png = chart_png_from_points(pts_1h)
-        return [("last_hour.png", "image/png", png)]
+        pts_10m_20 = resample_10min_last(pts, max_points=20)
+        png = chart_png_from_points(pts_10m_20)
+        return [("last_20x10min.png", "image/png", png)]
 
     def snapshot(self) -> Dict[str, Any]:
         with self.lock:
@@ -794,9 +819,19 @@ def index():
 
 @app.route("/api/inlet")
 def api_inlet():
-    # Direct fetch (instant) for UI
-    ok, payload, attempts = client.get_system_inlet()
-    return jsonify({"success": ok, "data": payload if ok else None, "error": None if ok else payload.get("message"), "attempts": attempts})
+    # Serve cached last sample to avoid slow live Redfish crawl on page load
+    s = monitor.snapshot()
+    ok = s["last_temp"] is not None
+    data = None
+    if ok:
+        data = {
+            "name": "System Inlet Temperature",
+            "reading_c": s["last_temp"],
+            "status": s["last_status"],
+            "endpoint": s["last_endpoint"],
+            "source": "Cached"
+        }
+    return jsonify({"success": ok, "data": data, "error": None if ok else "No recent sample", "attempts": []})
 
 @app.route("/diag")
 def diag():
@@ -821,7 +856,7 @@ def health():
 
 @app.route("/graph.png")
 def graph_png():
-    pts = monitor.last_hour_points()
+    pts = resample_10min_last(list(monitor.history), max_points=20)
     data = chart_png_from_points(pts)
     return Response(data, mimetype="image/png")
 
@@ -847,6 +882,7 @@ def api_test_email():
     s = monitor.snapshot()
     subject = "[iDRAC Test] Email Connectivity"
     html, text = build_email_body("Test", s["last_temp"], now, s["last_endpoint"])
+    html, text = _append_past_hour_stats(html, text, monitor.history)
     chart = monitor._build_chart_attachment()
     ok = send_email(subject, html, text, attachments=chart)
     return jsonify({"success": ok, "error": None if ok else (_last_smtp_error or "unknown error")})
