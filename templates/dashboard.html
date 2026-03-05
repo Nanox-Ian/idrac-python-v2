@@ -6,41 +6,198 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <style>
-    :root{--bg:#0f172a;--panel:#111827;--text:#e5e7eb;--muted:#9ca3af;--border:#1f2937;--ok:#10b981;--warn:#f59e0b;--crit:#ef4444;--accent:#3b82f6;}
-    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-    .wrap{max-width:1020px;margin:0 auto;padding:18px 14px 60px}
-    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:10px}
-    .h-left{display:flex;align-items:center;gap:10px}
-    .logo{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#8b5cf6);display:flex;align-items:center;justify-content:center;font-weight:800}
-    .title{font-weight:800}
-    .toolbar{display:flex;gap:8px;flex-wrap:wrap}
-    button{background:#0b1220;color:var(--text);border:1px solid var(--border);padding:8px 12px;border-radius:8px;cursor:pointer}
-    button.primary{background:var(--accent);border-color:transparent}
-    .grid{display:grid;grid-template-columns:1fr;gap:12px}
-    @media(min-width:900px){.grid{grid-template-columns:1.2fr 1fr}}
-    .card{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:14px}
-    h2{margin:0 0 8px 0;font-size:16px}
-    .row{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
-    .big{font-size:56px;font-weight:900;line-height:1}
-    .big small{font-size:.45em;color:var(--muted);font-weight:700}
-    .state{display:inline-block;margin-top:6px;padding:6px 10px;border-radius:999px;border:1px solid var(--border);font-weight:800}
-    .state.ok{color:var(--ok);border-color:#064e3b}
-    .state.warn{color:var(--warn);border-color:#7c2d12}
-    .state.crit{color:var(--crit);border-color:#7f1d1d}
-    .meta{color:var(--muted);font-size:12px;margin-top:6px}
-    .kv{display:grid;grid-template-columns:auto 1fr;gap:6px 12px;margin-top:8px}
-    img.graph{width:100%;max-width:600px;border:1px solid var(--border);border-radius:8px}
-    table{width:100%;border-collapse:collapse;font-size:14px}
-    th,td{padding:8px;border-bottom:1px solid var(--border);text-align:left}
-    .diag pre{background:#0b1220;border:1px solid var(--border);border-radius:10px;padding:10px;overflow:auto;max-height:260px}
-    .good{color:var(--ok)} .bad{color:var(--crit)}
+    /* -------------------- THEME -------------------- */
+    :root {
+      --bg: #0d1117;
+      --panel: rgba(17, 24, 39, 0.72);
+      --panel-border: rgba(255, 255, 255, 0.06);
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --accent: #3b82f6;
+      --radius: 16px;
+
+      --ok: #10b981;
+      --warn: #f59e0b;
+      --crit: #ef4444;
+
+      --shadow: 0 8px 30px rgba(0,0,0,0.35);
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 16px 80px;
+    }
+
+    /* -------------------- HEADER -------------------- */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+    }
+
+    .logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 18px;
+      color: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .toolbar button {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      padding: 8px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+      color: var(--text);
+      transition: 0.2s;
+    }
+
+    .toolbar button.primary {
+      background: var(--accent);
+      border-color: transparent;
+    }
+
+    .toolbar button:hover {
+      opacity: 0.85;
+    }
+
+    /* -------------------- CARDS -------------------- */
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      padding: 22px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    h2 {
+      margin: 0 0 10px 0;
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    /* -------------------- GRID -------------------- */
+    .grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: 1fr;
+    }
+
+    @media (min-width: 900px) {
+      .grid {
+        grid-template-columns: 1.4fr 1fr;
+      }
+    }
+
+    /* -------------------- TEMP PANEL -------------------- */
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 22px;
+    }
+
+    .big {
+      font-size: 68px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .big small {
+      font-size: 0.45em;
+      color: var(--muted);
+    }
+
+    .state {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--panel-border);
+      font-weight: 800;
+    }
+
+    .state.ok { color: var(--ok); }
+    .state.warn { color: var(--warn); }
+    .state.crit { color: var(--crit); }
+
+    .graph {
+      width: 100%;
+      max-width: 520px;
+      border-radius: 12px;
+      border: 1px solid var(--panel-border);
+      box-shadow: var(--shadow);
+    }
+
+    .kv {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px 14px;
+      font-size: 14px;
+    }
+
+    /* -------------------- DIAGNOSTICS -------------------- */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 14px;
+    }
+
+    th, td {
+      padding: 8px;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    pre {
+      background: rgba(0,0,0,0.35);
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--panel-border);
+      font-size: 13px;
+      max-height: 260px;
+      overflow: auto;
+    }
+
+    .good { color: var(--ok); }
+    .bad { color: var(--crit); }
   </style>
 </head>
 <body>
   <div class="wrap">
     <header>
       <div class="h-left">
-        <div class="logo">iTM</div>
         <div>
           <div class="title">System Inlet Temperature</div>
           <div class="meta">Fast Redfish fetch + Hourly/persistent emails + 1‑hour graph</div>
@@ -68,6 +225,14 @@
               <div>Source</div><div id="source">--</div>
               <div>Sensor Health</div><div id="health">--</div>
             </div>
+
+            <!-- NEW: Past hour stats rendered from /api/status -> data.log_entries -->
+            <div class="kv" id="pastHourBlock" style="margin-top:16px;">
+              <div>Past hour (min)</div><div id="phMin">--</div>
+              <div>Past hour (avg)</div><div id="phAvg">--</div>
+              <div>Past hour (max)</div><div id="phMax">--</div>
+              <div>Samples</div><div id="phCount">--</div>
+            </div>
           </div>
         </div>
       </section>
@@ -83,23 +248,27 @@
           <div>Last SMTP error</div><div id="smtpErr">--</div>
         </div>
       </section>
-
-      <section class="card">
-        <h2>Diagnostics</h2>
-        <div class="meta">Endpoints tried during discovery and results.</div>
-        <div style="margin-top:8px;">
-          <table id="attemptsTable" style="display:none;">
-            <thead><tr><th>Endpoint</th><th>Status</th><th>Temps?</th><th>Inlet?</th><th>Detail</th></tr></thead>
-            <tbody id="attemptsBody"></tbody>
-          </table>
-          <div id="attemptsMsg" class="meta">Run diagnostics to populate this.</div>
-          <div class="diag" style="margin-top:10px;">
-            <strong>Raw</strong>
-            <pre id="diagRaw">Click “Diagnostics”.</pre>
-          </div>
-        </div>
-      </section>
     </div>
+
+    <!-- (Optional) Diagnostics section: Uncomment if you have the table elements in your template
+    <section class="card" style="margin-top:20px;">
+      <h2>Diagnostics</h2>
+      <div id="attemptsMsg" class="meta"></div>
+      <table id="attemptsTable" style="display:none;">
+        <thead>
+          <tr>
+            <th>Endpoint</th>
+            <th>Status</th>
+            <th>Has Temps</th>
+            <th>Inlet Found</th>
+            <th>Form</th>
+          </tr>
+        </thead>
+        <tbody id="attemptsBody"></tbody>
+      </table>
+      <pre id="diagRaw"></pre>
+    </section>
+    -->
   </div>
 
   <script>
@@ -110,6 +279,11 @@
     const epEl = document.getElementById('endpoint');
     const sourceEl = document.getElementById('source');
     const healthEl = document.getElementById('health');
+
+    const phMin = document.getElementById('phMin');
+    const phAvg = document.getElementById('phAvg');
+    const phMax = document.getElementById('phMax');
+    const phCount = document.getElementById('phCount');
 
     const lastHourly = document.getElementById('lastHourly');
     const lastAlert = document.getElementById('lastAlert');
@@ -131,6 +305,72 @@
       pill.className='state ok'; pill.textContent='NORMAL';
     }
 
+    function escapeHtml(s){
+      return String(s)
+        .replace(/&/g,'&amp;')
+        .replace(/</g,'&lt;')
+        .replace(/>/g,'&gt;')
+        .replace(/"/g,'&quot;')
+        .replace(/'/g,'&#039;');
+    }
+
+    // ---------- Past hour helpers (from temperature.log via /api/status) ----------
+    function parseTemp(valStr){
+      // /api/status strips "°C" already: temp like "23.4" or "N/A"
+      if(valStr == null) return null;
+      const s = String(valStr).trim();
+      if(!s || s.toUpperCase() === 'N/A') return null;
+      const n = Number(s);
+      return isNaN(n) ? null : n;
+    }
+
+    function parseLogTimestamp(tsStr){
+      // "YYYY-MM-DD HH:MM:SS" -> Date
+      try{
+        const iso = String(tsStr).replace(' ', 'T');
+        const d = new Date(iso);
+        if(isNaN(d.getTime())) return null;
+        return d;
+      }catch(e){
+        return null;
+      }
+    }
+
+    function updatePastHourFromLog(logEntries){
+      // logEntries: [{ timestamp, temp, status }]
+      if(!Array.isArray(logEntries) || logEntries.length === 0){
+        phMin.textContent='--'; phAvg.textContent='--'; phMax.textContent='--'; phCount.textContent='0';
+        return;
+      }
+      const now = Date.now();
+      const oneHourAgo = now - 60*60*1000;
+
+      const nums = [];
+      for(const row of logEntries){
+        const d = parseLogTimestamp(row.timestamp);
+        if(!d) continue;
+        if(d.getTime() < oneHourAgo) continue;
+        const t = parseTemp(row.temp);
+        if(t == null) continue;
+        nums.push(t);
+      }
+
+      if(nums.length === 0){
+        phMin.textContent='--'; phAvg.textContent='--'; phMax.textContent='--'; phCount.textContent='0';
+        return;
+      }
+
+      const mn = Math.min(...nums);
+      const mx = Math.max(...nums);
+      const avg = nums.reduce((a,b)=>a+b,0) / nums.length;
+
+      phMin.textContent = mn.toFixed(1) + '°C';
+      phAvg.textContent = avg.toFixed(1) + '°C';
+      phMax.textContent = mx.toFixed(1) + '°C';
+      phCount.textContent = String(nums.length);
+    }
+    // ------------------------------------------------------------------------------
+
     async function refresh(){
       try{
         const r = await fetch('/api/inlet', {cache:'no-store'});
@@ -146,7 +386,7 @@
           sourceEl.textContent = d.source || '--';
           healthEl.textContent = d.status || 'Unknown';
 
-          // Bust graph cache so it refreshes
+          // Bust graph cache so it refreshes (server-side /graph.png should read latest log/history)
           const u = new URL(graphImg.src, location.href);
           u.searchParams.set('t', Date.now());
           graphImg.src = u.toString();
@@ -177,21 +417,26 @@
             rcpts.textContent = (j.email.to||[]).join(', ');
             smtpErr.textContent = j.email.last_smtp_error || 'None';
           }
+
+          // NEW: compute past 1h stats from temperature.log entries
+          updatePastHourFromLog(d.log_entries || []);
         }
-      }catch(e){}
+      }catch(e){
+        // ignore
+      }
     }
 
     async function runDiag(){
       try{
         const r = await fetch('/diag', {cache:'no-store'});
         const j = await r.json();
-        diagRaw.textContent = JSON.stringify(j, null, 2);
+        if(diagRaw) diagRaw.textContent = JSON.stringify(j, null, 2);
 
         const attempts = j.attempts || [];
-        attemptsBody.innerHTML = '';
+        if(attemptsBody) attemptsBody.innerHTML = '';
         if(attempts.length){
-          attemptsTable.style.display='table';
-          attemptsMsg.textContent='';
+          if(attemptsTable) attemptsTable.style.display='table';
+          if(attemptsMsg) attemptsMsg.textContent='';
           for(const a of attempts){
             const tr = document.createElement('tr');
             tr.innerHTML = `
@@ -201,16 +446,16 @@
               <td>${a.inlet_found ? '<span class="good">yes</span>' : 'no'}</td>
               <td>${escapeHtml(a.detail||'')}</td>
             `;
-            attemptsBody.appendChild(tr);
+            if(attemptsBody) attemptsBody.appendChild(tr);
           }
         }else{
-          attemptsTable.style.display='none';
-          attemptsMsg.textContent='No attempts recorded.';
+          if(attemptsTable) attemptsTable.style.display='none';
+          if(attemptsMsg) attemptsMsg.textContent='No attempts recorded.';
         }
       }catch(e){
-        diagRaw.textContent = String(e);
-        attemptsTable.style.display='none';
-        attemptsMsg.textContent='Diagnostics error.';
+        if(diagRaw) diagRaw.textContent = String(e);
+        if(attemptsTable) attemptsTable.style.display='none';
+        if(attemptsMsg) attemptsMsg.textContent='Diagnostics error.';
       }
     }
 
@@ -229,15 +474,11 @@
       }
     }
 
-    function escapeHtml(s){
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
-    }
-
     document.getElementById('btnRefresh').addEventListener('click', async ()=>{
       await refresh();
       await loadStatus();
     });
-    document.getElementById('btnDiag').addEventListener('click', runDiag);
+    document.getElementById('btnDiag')?.addEventListener('click', runDiag);
     document.getElementById('btnTestEmail').addEventListener('click', testEmail);
 
     (async function init(){
