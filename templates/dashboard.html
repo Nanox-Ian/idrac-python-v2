@@ -1,493 +1,204 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>System Inlet Temperature Monitor</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="color-scheme" content="light dark">
-  <style>
-    /* -------------------- THEME -------------------- */
-    :root {
-      --bg: #0d1117;
-      --panel: rgba(17, 24, 39, 0.72);
-      --panel-border: rgba(255, 255, 255, 0.06);
-      --text: #e5e7eb;
-      --muted: #9ca3af;
-      --accent: #3b82f6;
-      --radius: 16px;
+<meta charset="utf-8">
+<title>iDRAC Monitor</title>
+<meta name="viewport" content="width=device-width">
 
-      --ok: #10b981;
-      --warn: #f59e0b;
-      --crit: #ef4444;
+<!-- ✅ LOCAL CHART.JS -->
+<script src="/static/chart.umd.min.js"></script>
 
-      --shadow: 0 8px 30px rgba(0,0,0,0.35);
-    }
+<style>
+body{
+  margin:0;
+  background:#0d1117;
+  color:#e5e7eb;
+  font-family:system-ui,Segoe UI;
+}
+.wrap{
+  max-width:1200px;
+  margin:auto;
+  padding:16px;
+}
+.grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,260px);
+  gap:14px;
+}
+.card{
+  background:#161b22;
+  border:1px solid #30363d;
+  border-radius:14px;
+  padding:12px;
+}
+.temp{
+  font-size:44px;
+  font-weight:900;
+}
+.ok{color:#10b981}
+.warn{color:#f59e0b}
+.crit{color:#ef4444}
+small{color:#9ca3af}
 
-    body {
-      margin: 0;
-      background: var(--bg);
-      color: var(--text);
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
-      -webkit-font-smoothing: antialiased;
-    }
+.controls{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  margin-bottom:8px;
+}
 
-    .wrap {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 32px 16px 80px;
-    }
+button,select{
+  padding:6px 10px;
+  border-radius:8px;
+  background:#161b22;
+  color:#e5e7eb;
+  border:1px solid #30363d;
+  cursor:pointer;
+}
 
-    /* -------------------- HEADER -------------------- */
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 28px;
-    }
+.chart-wrap{
+  position:relative;
+  height:240px;   /* ✅ fixed height */
+  width:100%;
+}
 
-    .logo {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, var(--accent), #8b5cf6);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      font-size: 18px;
-      color: #fff;
-      box-shadow: var(--shadow);
-    }
-
-    .title {
-      font-size: 22px;
-      font-weight: 900;
-    }
-
-    .meta {
-      font-size: 13px;
-      color: var(--muted);
-    }
-
-    .toolbar button {
-      background: var(--panel);
-      border: 1px solid var(--panel-border);
-      padding: 8px 14px;
-      border-radius: 10px;
-      cursor: pointer;
-      backdrop-filter: blur(6px);
-      color: var(--text);
-      transition: 0.2s;
-    }
-
-    .toolbar button.primary {
-      background: var(--accent);
-      border-color: transparent;
-    }
-
-    .toolbar button:hover {
-      opacity: 0.85;
-    }
-
-    /* -------------------- CARDS -------------------- */
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--panel-border);
-      border-radius: var(--radius);
-      padding: 22px;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(12px);
-    }
-
-    h2 {
-      margin: 0 0 10px 0;
-      font-size: 18px;
-      font-weight: 800;
-    }
-
-    /* -------------------- GRID -------------------- */
-    .grid {
-      display: grid;
-      gap: 20px;
-      grid-template-columns: 1fr;
-    }
-
-    @media (min-width: 900px) {
-      .grid {
-        grid-template-columns: 1.4fr 1fr;
-      }
-    }
-
-    /* -------------------- TEMP PANEL -------------------- */
-    .row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 22px;
-    }
-
-    .big {
-      font-size: 68px;
-      font-weight: 900;
-      line-height: 1;
-    }
-
-    .big small {
-      font-size: 0.45em;
-      color: var(--muted);
-    }
-
-    .state {
-      display: inline-block;
-      margin-top: 6px;
-      padding: 6px 12px;
-      border-radius: 999px;
-      border: 1px solid var(--panel-border);
-      font-weight: 800;
-    }
-
-    .state.ok { color: var(--ok); }
-    .state.warn { color: var(--warn); }
-    .state.crit { color: var(--crit); }
-
-    .graph {
-      width: 100%;
-      max-width: 520px;
-      border-radius: 12px;
-      border: 1px solid var(--panel-border);
-      box-shadow: var(--shadow);
-    }
-
-    .kv {
-      margin-top: 14px;
-      display: grid;
-      grid-template-columns: auto 1fr;
-      gap: 8px 14px;
-      font-size: 14px;
-    }
-
-    /* -------------------- DIAGNOSTICS -------------------- */
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-      margin-top: 14px;
-    }
-
-    th, td {
-      padding: 8px;
-      border-bottom: 1px solid var(--panel-border);
-    }
-
-    pre {
-      background: rgba(0,0,0,0.35);
-      padding: 14px;
-      border-radius: 12px;
-      border: 1px solid var(--panel-border);
-      font-size: 13px;
-      max-height: 260px;
-      overflow: auto;
-    }
-
-    .good { color: var(--ok); }
-    .bad { color: var(--crit); }
-  </style>
+#logs{
+  display:none;
+  max-height:260px;
+  overflow:auto;
+  background:#010409;
+  border:1px solid #30363d;
+  border-radius:10px;
+  padding:10px;
+  font-family:monospace;
+  font-size:12px;
+  margin-top:8px;
+}
+</style>
 </head>
+
 <body>
-  <div class="wrap">
-    <header>
-      <div class="h-left">
-        <div>
-          <div class="title">System Inlet Temperature</div>
-          <div class="meta">Fast Redfish fetch + Hourly/persistent emails + 1‑hour graph</div>
-        </div>
-      </div>
-      <div class="toolbar">
-        <button id="btnRefresh" class="primary">Refresh</button>
-        <button id="btnDiag">Diagnostics</button>
-        <button id="btnTestEmail">Send Test Email</button>
-      </div>
-    </header>
+<div class="wrap">
 
-    <div class="grid">
-      <section class="card">
-        <h2>Current Reading</h2>
-        <div class="row">
-          <img class="graph" id="graphImg" src="/graph.png" alt="Last hour graph"/>
-          <div>
-            <div class="big"><span id="val">--</span><small>°C</small></div>
-            <div id="pill" class="state">UNKNOWN</div>
-            <div class="meta" id="updated">Last updated: --</div>
-            <div class="kv">
-              <div>Sensor Name</div><div id="name">System Inlet Temperature</div>
-              <div>iDRAC Endpoint</div><div id="endpoint">--</div>
-              <div>Source</div><div id="source">--</div>
-              <div>Sensor Health</div><div id="health">--</div>
-            </div>
+<h2>iDRAC Inlet Temperature</h2>
 
-            <!-- NEW: Past hour stats rendered from /api/status -> data.log_entries -->
-            <div class="kv" id="pastHourBlock" style="margin-top:16px;">
-              <div>Past hour (min)</div><div id="phMin">--</div>
-              <div>Past hour (avg)</div><div id="phAvg">--</div>
-              <div>Past hour (max)</div><div id="phMax">--</div>
-              <div>Samples</div><div id="phCount">--</div>
-            </div>
-          </div>
-        </div>
-      </section>
+<!-- TEMPERATURE CARDS -->
+<div id="cards" class="grid"></div>
 
-      <section class="card">
-        <h2>Email / Service Status</h2>
-        <div class="kv">
-          <div>Last hourly email</div><div id="lastHourly">--</div>
-          <div>Last alert email</div><div id="lastAlert">--</div>
-          <div>Alert state</div><div id="alertState">--</div>
-          <div>SMTP</div><div id="smtp">--</div>
-          <div>Recipients</div><div id="rcpts">--</div>
-          <div>Last SMTP error</div><div id="smtpErr">--</div>
-        </div>
-      </section>
-    </div>
-
-    <!-- (Optional) Diagnostics section: Uncomment if you have the table elements in your template
-    <section class="card" style="margin-top:20px;">
-      <h2>Diagnostics</h2>
-      <div id="attemptsMsg" class="meta"></div>
-      <table id="attemptsTable" style="display:none;">
-        <thead>
-          <tr>
-            <th>Endpoint</th>
-            <th>Status</th>
-            <th>Has Temps</th>
-            <th>Inlet Found</th>
-            <th>Form</th>
-          </tr>
-        </thead>
-        <tbody id="attemptsBody"></tbody>
-      </table>
-      <pre id="diagRaw"></pre>
-    </section>
-    -->
+<!-- GRAPH -->
+<div class="card" style="margin-top:12px">
+  <div class="controls">
+    <select id="serverSelect"></select>
+    <button onclick="loadGraph()">Update Graph</button>
   </div>
+  <div class="chart-wrap">
+    <canvas id="chartCanvas"></canvas>
+  </div>
+</div>
 
-  <script>
-    const valEl = document.getElementById('val');
-    const pill = document.getElementById('pill');
-    const updated = document.getElementById('updated');
-    const nameEl = document.getElementById('name');
-    const epEl = document.getElementById('endpoint');
-    const sourceEl = document.getElementById('source');
-    const healthEl = document.getElementById('health');
+<!-- LOGS -->
+<div class="card" style="margin-top:12px">
+  <div class="controls">
+    <button onclick="toggleLogs()">View Logs</button>
+    <button onclick="downloadLogs()">Download CSV</button>
+  </div>
+  <pre id="logs"></pre>
+</div>
 
-    const phMin = document.getElementById('phMin');
-    const phAvg = document.getElementById('phAvg');
-    const phMax = document.getElementById('phMax');
-    const phCount = document.getElementById('phCount');
+</div>
 
-    const lastHourly = document.getElementById('lastHourly');
-    const lastAlert = document.getElementById('lastAlert');
-    const alertState = document.getElementById('alertState');
-    const smtp = document.getElementById('smtp');
-    const rcpts = document.getElementById('rcpts');
-    const smtpErr = document.getElementById('smtpErr');
+<script>
+let chart = null;
+let initialized = false;
 
-    const attemptsTable = document.getElementById('attemptsTable');
-    const attemptsBody = document.getElementById('attemptsBody');
-    const attemptsMsg = document.getElementById('attemptsMsg');
-    const diagRaw = document.getElementById('diagRaw');
-    const graphImg = document.getElementById('graphImg');
+async function loadState(){
+  const state = await (await fetch('/api/state',{cache:'no-store'})).json();
+  const cards = document.getElementById('cards');
+  const select = document.getElementById('serverSelect');
+  const current = select.value;
 
-    function setState(v, warn=25, crit=30){
-      if(v==null || isNaN(v)){ pill.className='state'; pill.textContent='UNKNOWN'; return; }
-      if(v>=crit){ pill.className='state crit'; pill.textContent='CRITICAL'; return; }
-      if(v>=warn){ pill.className='state warn'; pill.textContent='WARNING'; return; }
-      pill.className='state ok'; pill.textContent='NORMAL';
-    }
+  cards.innerHTML='';
 
-    function escapeHtml(s){
-      return String(s)
-        .replace(/&/g,'&amp;')
-        .replace(/</g,'&lt;')
-        .replace(/>/g,'&gt;')
-        .replace(/"/g,'&quot;')
-        .replace(/'/g,'&#039;');
-    }
-
-    // ---------- Past hour helpers (from temperature.log via /api/status) ----------
-    function parseTemp(valStr){
-      // /api/status strips "°C" already: temp like "23.4" or "N/A"
-      if(valStr == null) return null;
-      const s = String(valStr).trim();
-      if(!s || s.toUpperCase() === 'N/A') return null;
-      const n = Number(s);
-      return isNaN(n) ? null : n;
-    }
-
-    function parseLogTimestamp(tsStr){
-      // "YYYY-MM-DD HH:MM:SS" -> Date
-      try{
-        const iso = String(tsStr).replace(' ', 'T');
-        const d = new Date(iso);
-        if(isNaN(d.getTime())) return null;
-        return d;
-      }catch(e){
-        return null;
-      }
-    }
-
-    function updatePastHourFromLog(logEntries){
-      // logEntries: [{ timestamp, temp, status }]
-      if(!Array.isArray(logEntries) || logEntries.length === 0){
-        phMin.textContent='--'; phAvg.textContent='--'; phMax.textContent='--'; phCount.textContent='0';
-        return;
-      }
-      const now = Date.now();
-      const oneHourAgo = now - 60*60*1000;
-
-      const nums = [];
-      for(const row of logEntries){
-        const d = parseLogTimestamp(row.timestamp);
-        if(!d) continue;
-        if(d.getTime() < oneHourAgo) continue;
-        const t = parseTemp(row.temp);
-        if(t == null) continue;
-        nums.push(t);
-      }
-
-      if(nums.length === 0){
-        phMin.textContent='--'; phAvg.textContent='--'; phMax.textContent='--'; phCount.textContent='0';
-        return;
-      }
-
-      const mn = Math.min(...nums);
-      const mx = Math.max(...nums);
-      const avg = nums.reduce((a,b)=>a+b,0) / nums.length;
-
-      phMin.textContent = mn.toFixed(1) + '°C';
-      phAvg.textContent = avg.toFixed(1) + '°C';
-      phMax.textContent = mx.toFixed(1) + '°C';
-      phCount.textContent = String(nums.length);
-    }
-    // ------------------------------------------------------------------------------
-
-    async function refresh(){
-      try{
-        const r = await fetch('/api/inlet', {cache:'no-store'});
-        const j = await r.json();
-        if(j.success && j.data){
-          const d = j.data;
-          const v = (d.reading_c==null)? null : Number(d.reading_c);
-          valEl.textContent = (v==null || isNaN(v)) ? '--' : v.toFixed(1);
-          setState(v, 25, 30);
-          updated.textContent = 'Last updated: ' + new Date().toLocaleString();
-          nameEl.textContent = d.name || 'System Inlet Temperature';
-          epEl.textContent = d.endpoint || '--';
-          sourceEl.textContent = d.source || '--';
-          healthEl.textContent = d.status || 'Unknown';
-
-          // Bust graph cache so it refreshes (server-side /graph.png should read latest log/history)
-          const u = new URL(graphImg.src, location.href);
-          u.searchParams.set('t', Date.now());
-          graphImg.src = u.toString();
-        } else {
-          valEl.textContent = '--';
-          setState(null);
-          updated.textContent = 'Last updated: (no data)';
-          epEl.textContent='--'; sourceEl.textContent='--'; healthEl.textContent='--';
-        }
-      }catch(e){
-        valEl.textContent = '--';
-        setState(null);
-        updated.textContent = 'Last updated: (error)';
-      }
-    }
-
-    async function loadStatus(){
-      try{
-        const r = await fetch('/api/status', {cache:'no-store'});
-        const j = await r.json();
-        if(j.success){
-          const d = j.data;
-          lastHourly.textContent = d.last_hourly_sent || '--';
-          lastAlert.textContent  = d.last_alert_sent || '--';
-          alertState.textContent = d.alert_state || 'None';
-          if(j.email){
-            smtp.textContent = `${j.email.host}:${j.email.port} (${j.email.tls||'plain'})`;
-            rcpts.textContent = (j.email.to||[]).join(', ');
-            smtpErr.textContent = j.email.last_smtp_error || 'None';
-          }
-
-          // NEW: compute past 1h stats from temperature.log entries
-          updatePastHourFromLog(d.log_entries || []);
-        }
-      }catch(e){
-        // ignore
-      }
-    }
-
-    async function runDiag(){
-      try{
-        const r = await fetch('/diag', {cache:'no-store'});
-        const j = await r.json();
-        if(diagRaw) diagRaw.textContent = JSON.stringify(j, null, 2);
-
-        const attempts = j.attempts || [];
-        if(attemptsBody) attemptsBody.innerHTML = '';
-        if(attempts.length){
-          if(attemptsTable) attemptsTable.style.display='table';
-          if(attemptsMsg) attemptsMsg.textContent='';
-          for(const a of attempts){
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td><code>${escapeHtml(a.endpoint||'')}</code></td>
-              <td>${a.status}</td>
-              <td>${a.has_temperatures ? '<span class="good">yes</span>' : 'no'}</td>
-              <td>${a.inlet_found ? '<span class="good">yes</span>' : 'no'}</td>
-              <td>${escapeHtml(a.detail||'')}</td>
-            `;
-            if(attemptsBody) attemptsBody.appendChild(tr);
-          }
-        }else{
-          if(attemptsTable) attemptsTable.style.display='none';
-          if(attemptsMsg) attemptsMsg.textContent='No attempts recorded.';
-        }
-      }catch(e){
-        if(diagRaw) diagRaw.textContent = String(e);
-        if(attemptsTable) attemptsTable.style.display='none';
-        if(attemptsMsg) attemptsMsg.textContent='Diagnostics error.';
-      }
-    }
-
-    async function testEmail(){
-      try{
-        const r = await fetch('/api/test_email', {cache:'no-store'});
-        const j = await r.json();
-        if(j.success){
-          alert('Test email sent!');
-        } else {
-          alert('Test email failed: ' + (j.error || 'unknown error'));
-        }
-        loadStatus();
-      }catch(e){
-        alert('Error sending test email');
-      }
-    }
-
-    document.getElementById('btnRefresh').addEventListener('click', async ()=>{
-      await refresh();
-      await loadStatus();
+  if(!initialized){
+    select.innerHTML='';
+    Object.keys(state).forEach(h=>{
+      let o=document.createElement('option');
+      o.value=h;
+      o.textContent=h;
+      select.appendChild(o);
     });
-    document.getElementById('btnDiag')?.addEventListener('click', runDiag);
-    document.getElementById('btnTestEmail').addEventListener('click', testEmail);
+    initialized=true;
+  }
 
-    (async function init(){
-      // FAST UI updates: every 5s
-      await refresh();
-      await loadStatus();
-      setInterval(refresh, 5000);
-      setInterval(loadStatus, 10000);
-    })();
-  </script>
+  if(current) select.value=current;
+
+  Object.entries(state).forEach(([h,s])=>{
+    const cls=s.status==="CRITICAL"?"crit":s.status==="WARNING"?"warn":"ok";
+    cards.innerHTML+=`
+      <div class="card">
+        <b>${h}</b>
+        <div class="temp ${cls}">${s.temp ?? '--'}°C</div>
+        <div class="${cls}">${s.status}</div>
+        <small>${s.timestamp}</small>
+      </div>
+    `;
+  });
+}
+
+async function loadGraph(){
+  const host=serverSelect.value;
+  if(!host) return;
+
+  const pts=await (await fetch(`/api/history?host=${host}`,{cache:'no-store'})).json();
+  if(!pts.length) return;
+
+  const labels=pts.map(p=>p.t.slice(11,16));
+  const data=pts.map(p=>Number(p.v));
+
+  if(chart) chart.destroy();
+
+  chart=new Chart(
+    document.getElementById('chartCanvas'),
+    {
+      type:'line',
+      data:{
+        labels:labels,
+        datasets:[{
+          label:`${host} – last 1h`,
+          data:data,
+          borderColor:'#3b82f6',
+          backgroundColor:'rgba(59,130,246,.2)',
+          fill:true,
+          tension:0.3,
+          pointRadius:2
+        }]
+      },
+      options:{
+        responsive:true,
+        maintainAspectRatio:false,
+        animation:false
+      }
+    }
+  );
+}
+
+async function toggleLogs(){
+  const box=document.getElementById('logs');
+  if(box.style.display==='block'){box.style.display='none';return;}
+  const h=serverSelect.value;
+  const lines=await (await fetch(`/api/logs?host=${h}`)).json();
+  box.textContent=lines.join('');
+  box.style.display='block';
+}
+
+function downloadLogs(){
+  window.location=`/api/export?host=${serverSelect.value}`;
+}
+
+loadState();
+setInterval(loadState,5000);
+setTimeout(loadGraph,1500);
+</script>
+
 </body>
 </html>
